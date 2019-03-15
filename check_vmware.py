@@ -69,6 +69,9 @@ def main():
         default=0.9
     )
     args = parser.parse_args()
+    if float(args.warning) > float(args.critical):
+        print("Error: warning value can not be greater than critical value")
+        sys.exit(3)
 
     # connect to the system
     system = VMWareSystem(args.vsphere, args.user, args.password)
@@ -78,12 +81,12 @@ def main():
         print("Error: esxi hostname {} does not exist on vSphere {}".format(
             args.hostname, args.vsphere
         ))
-        sys.exit(2)
+        sys.exit(3)
     # get measurement function
     measure_func = get_measurement(args.measurement)
     if not measure_func:
         print("Error: measurement {} not understood".format(args.measurement))
-        sys.exit(2)
+        sys.exit(3)
     # run the measurement function
     measure_func(host, warn=args.warning, crit=args.critical)
 

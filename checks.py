@@ -49,28 +49,28 @@ def check_cpu_usage(host, warn=0.75, crit=0.9, **kwargs):
 
 
 def check_datastore_status(host, **kwargs):
-    """ Check the connection of all the datastores on the host. """
-    okay, warn, crit, unknown, all = [], [], [], [], []
+    """ Check the status of all the datastores on the host. """
+    okay, warning, critical, unknown, all = [], [], [], [], []
     datastores = host.datastore
     for datastore in datastores:
         status = datastore.overallStatus
         if status == "green":
             okay.append((datastore.name, status))
         elif status == "yellow":
-            warn.append((datastore.name, status))
+            warning.append((datastore.name, status))
         elif status == "red":
-            crit.append((datastore.name, status))
+            critical.append((datastore.name, status))
         else:
             unknown.append((datastore.name, status))
         all.append((datastore.name, status))
 
-    if crit:
+    if critical:
         print("Critical: the following datastore(s) definitely have an issue: {}\n "
-              "Status of all datastores is: {}".format(crit, all))
+              "Status of all datastores is: {}".format(critical, all))
         sys.exit(2)
-    elif warn:
+    elif warning:
         print("Warning: the following datastore(s) may have an issue: {}\n "
-              "Status of all datastores is: {}".format(warn, all))
+              "Status of all datastores is: {}".format(warning, all))
         sys.exit(1)
     elif unknown:
         print("Unknown: the following datastore(s) are in an unknown state: {}\n"
@@ -78,6 +78,46 @@ def check_datastore_status(host, **kwargs):
         sys.exit(3)
     else:
         print("Ok: all datastore(s) are in the green state: {}".format(okay))
+        sys.exit(0)
+
+
+def check_datastore_usage(host, warn=0.75, crit=0.9, **kwargs):
+    """ Check the usage of all the datastores on the host. """
+    warn = float(warn)
+    crit = float(crit)
+    okay, warning, critical, unknown, all = [], [], [], [], []
+
+    datastores = host.datastore
+    for datastore in datastores:
+        freespace = float(datastore.summary.freeSpace)
+        totalspace = float(datastore.summary.capacity)
+
+        usage = round(1 - (freespace / totalspace), 3)
+        pct = str(usage * 100) + "%"
+        if usage < warn:
+            okay.append((datastore.name, pct))
+        elif usage < crit:
+            warning.append((datastore.name, pct))
+        elif usage > crit:
+            critical.append((datastore.name, pct))
+        else:
+            unknown.append((datastore.name, pct))
+        all.append((datastore.name, pct))
+
+    if critical:
+        print("Critical: the following datastore(s) are in critical usage: {}\n "
+              "Usage of all datastores is: {}".format(critical, all))
+        sys.exit(2)
+    elif warning:
+        print("Warning: the following datastore(s) have high usage: {}\n "
+              "Usage of all datastores is: {}".format(warning, all))
+        sys.exit(1)
+    elif unknown:
+        print("Unknown: the following datastore(s) have unknown usage: {}\n"
+              "Usage of all datastores is: {}".format(unknown, all))
+        sys.exit(3)
+    else:
+        print("Ok: all datastore(s) have ample space: {}".format(okay))
         sys.exit(0)
 
 
@@ -111,4 +151,5 @@ CHECKS = {
     "cpu": check_cpu_usage,
     "memory": check_memory_usage,
     "datastore_status": check_datastore_status,
+    "datastore_usage": check_datastore_usage,
 }
