@@ -76,19 +76,21 @@ def main():
     # connect to the system
     system = VMWareSystem(args.vsphere, args.user, args.password)
     # get the host object
-    host = system.get_obj(vim.HostSystem, args.hostname)
-    if not host:
-        print("Error: esxi hostname {} does not exist on vSphere {}".format(
-            args.hostname, args.vsphere
-        ))
-        sys.exit(3)
+    host = None
+    if args.hostname:
+        host = system.get_obj(vim.HostSystem, args.hostname)
+        if not host:
+            print("Error: esxi hostname {} does not exist on vSphere {}".format(
+                args.hostname, args.vsphere
+            ))
+            sys.exit(3)
     # get measurement function
     measure_func = get_measurement(args.measurement)
     if not measure_func:
         print("Error: measurement {} not understood".format(args.measurement))
         sys.exit(3)
     # run the measurement function
-    measure_func(host, warn=args.warning, crit=args.critical)
+    measure_func(host or system, warn=args.warning, crit=args.critical)
 
 
 if __name__ == "__main__":

@@ -1,12 +1,15 @@
 # coding: utf-8
 """
 These are the functions to check vmware hosts through the
-vcenter API
+vcenter API.
+Checks against a host begin with "check_host"
+Checks against vcenter begin with "check_system"
 """
 import sys
 
+from pyVmomi import vim
 
-def check_overall_status(host, **kwargs):
+def check_host_overall_status(host, **kwargs):
     """ Check overall host status. """
     status = host.overallStatus
     # determine ok, warning, critical, unknown state
@@ -24,7 +27,7 @@ def check_overall_status(host, **kwargs):
         sys.exit(3)
 
 
-def check_cpu_usage(host, warn=0.75, crit=0.9, **kwargs):
+def check_host_cpu_usage(host, warn=0.75, crit=0.9, **kwargs):
     warn = float(warn)
     crit = float(crit)
 
@@ -48,7 +51,7 @@ def check_cpu_usage(host, warn=0.75, crit=0.9, **kwargs):
         sys.exit(3)
 
 
-def check_datastore_status(host, **kwargs):
+def check_host_datastore_status(host, **kwargs):
     """ Check the status of all the datastores on the host. """
     okay, warning, critical, unknown, all = [], [], [], [], []
     datastores = host.datastore
@@ -81,7 +84,7 @@ def check_datastore_status(host, **kwargs):
         sys.exit(0)
 
 
-def check_datastore_usage(host, warn=0.75, crit=0.9, **kwargs):
+def check_host_datastore_usage(host, warn=0.75, crit=0.9, **kwargs):
     """ Check the usage of all the datastores on the host. """
     warn = float(warn)
     crit = float(crit)
@@ -121,7 +124,7 @@ def check_datastore_usage(host, warn=0.75, crit=0.9, **kwargs):
         sys.exit(0)
 
 
-def check_memory_usage(host, warn=0.75, crit=0.9, **kwargs):
+def check_host_memory_usage(host, warn=0.75, crit=0.9, **kwargs):
     """ Check memory usage of the host. """
     warn = float(warn)
     crit = float(crit)
@@ -146,10 +149,46 @@ def check_memory_usage(host, warn=0.75, crit=0.9, **kwargs):
         sys.exit(3)
 
 
+def check_system_datastore_status(system, **kwargs):
+    """ Check the status of all the datastores on the host. """
+    okay, warning, critical, unknown, all = [], [], [], [], []
+    datastores = [
+        system.get_obj(vim.Datastore, datastore) for datastore in system.list_datastore()
+    ]
+    for datastore in datastores:
+        status = datastore.overallStatus
+        if status == "green":
+            okay.append((datastore.name, status))
+        elif status == "yellow":
+            warning.append((datastore.name, status))
+        elif status == "red":
+            critical.append((datastore.name, status))
+        else:
+            unknown.append((datastore.name, status))
+        all.append((datastore.name, status))
+
+    if critical:
+        print("Critical: the following datastore(s) definitely have an issue: {}\n "
+              "Status of all datastores is: {}".format(critical, all))
+        sys.exit(2)
+    elif warning:
+        print("Warning: the following datastore(s) may have an issue: {}\n "
+              "Status of all datastores is: {}".format(warning, all))
+        sys.exit(1)
+    elif unknown:
+        print("Unknown: the following datastore(s) are in an unknown state: {}\n"
+              "Status of all datastores is: {}".format(unknown, all))
+        sys.exit(3)
+    else:
+        print("Ok: all datastore(s) are in the green state: {}".format(okay))
+        sys.exit(0)
+
+
 CHECKS = {
-    "status": check_overall_status,
-    "cpu": check_cpu_usage,
-    "memory": check_memory_usage,
-    "datastore_status": check_datastore_status,
-    "datastore_usage": check_datastore_usage,
+    "host_status": check_host_overall_status,
+    "host_cpu": check_host_cpu_usage,
+    "host_memory": check_host_memory_usage,
+    "host_datastore_status": check_host_datastore_status,
+    "host_datastore_usage": check_host_datastore_usage,
+    "system_datastore_status": check_system_datastore_status
 }
