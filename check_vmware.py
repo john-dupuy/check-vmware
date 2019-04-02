@@ -8,7 +8,7 @@ import argparse
 import sys
 
 from argparse import RawTextHelpFormatter
-from checks import CHECKS
+from vmware_checks import CHECKS
 from wrapanapi.systems.virtualcenter import VMWareSystem
 from pyVmomi import vim
 
