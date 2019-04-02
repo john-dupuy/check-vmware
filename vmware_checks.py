@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # coding: utf-8
 """
 These are the functions to check vmware hosts through the
