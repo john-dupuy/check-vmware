@@ -6,10 +6,12 @@ vcenter API.
 Checks against a host begin with "check_host"
 Checks against vcenter begin with "check_system"
 """
+import subprocess
 import sys
 
 from pyVmomi import vim
 
+#----------------------------- HOST LEVEL CHECKS -----------------------------------------------#
 def check_host_overall_status(host, **kwargs):
     """ Check overall host status. """
     status = host.overallStatus
@@ -150,8 +152,9 @@ def check_host_memory_usage(host, warn=0.75, crit=0.9, **kwargs):
         sys.exit(3)
 
 
+#--------------- SYSTEM LEVEL CHECKS -------------------------------------------------------#
 def check_system_datastore_status(system, **kwargs):
-    """ Check the status of all the datastores on the host. """
+    """ Check the status of all the datastores on vcenter. """
     okay, warning, critical, unknown, all = [], [], [], [], []
     datastores = [
         system.get_obj(vim.Datastore, datastore) for datastore in system.list_datastore()
@@ -185,11 +188,116 @@ def check_system_datastore_status(system, **kwargs):
         sys.exit(0)
 
 
+def check_system_datastore_usage(system, warn=0.75, crit=0.9, **kwargs):
+    """ Check the usage of all the datastores on vcenter. """
+    warn = float(warn)
+    crit = float(crit)
+
+    okay, warning, critical, unknown, all = [], [], [], [], []
+    datastores = [
+        system.get_obj(vim.Datastore, datastore) for datastore in system.list_datastore()
+    ]
+
+    for datastore in datastores:
+        freespace = float(datastore.summary.freeSpace)
+        totalspace = float(datastore.summary.capacity)
+
+        usage = round(1 - (freespace / totalspace), 3)
+        pct = str(usage * 100) + "%"
+        if usage < warn:
+            okay.append((datastore.name, pct))
+        elif usage < crit:
+            warning.append((datastore.name, pct))
+        elif usage > crit:
+            critical.append((datastore.name, pct))
+        else:
+            unknown.append((datastore.name, pct))
+        all.append((datastore.name, pct))
+
+    if critical:
+        print("Critical: the following datastore(s) are in critical usage: {}\n "
+              "Usage of all datastores is: {}".format(critical, all))
+        sys.exit(2)
+    elif warning:
+        print("Warning: the following datastore(s) have high usage: {}\n "
+              "Usage of all datastores is: {}".format(warning, all))
+        sys.exit(1)
+    elif unknown:
+        print("Unknown: the following datastore(s) have unknown usage: {}\n"
+              "Usage of all datastores is: {}".format(unknown, all))
+        sys.exit(3)
+    else:
+        print("Ok: all datastore(s) have ample space: {}".format(okay))
+        sys.exit(0)
+
+
+def check_system_ping_vms(system, **kwargs):
+    """ This checks the ping of all running VMs, no warning state for this check"""
+    vms = system.list_vms()
+
+    okay, critical, all = [], [], []
+    for vm in vms:
+        if vm.state == "VmState.RUNNING" and vm.ip:
+            status = test_ping(vm.ip)
+            if status == "Up":
+                okay.append((vm.name, vm.ip, status))
+            else:
+                critical.append((vm.name, vm.ip, status))
+            all.append((vm.name, vm.ip, status))
+
+    if critical:
+        print("Critical: the following VMs are inaccessible: {}".format(critical))
+        sys.exit(3)
+    else:
+        print("Okay: all running VMs that have IPs are accessible")
+        sys.exit(0)
+
+
+def check_system_connection_vms(system, **kwargs):
+    """ This checks the connection of all running VMs, no warning state for this check. This
+        check will report if VMs are disconnected, inaccessible, invalid or orphaned. All of
+        which will return a critical status. """
+    vms = system.get_obj_list(vim.VirtualMachine)
+
+    okay, critical, all = [], [], []
+    for vm in vms:
+        status = vm.summary.runtime.connectionState
+        if status == "connected":
+            okay.append((vm.name, status))
+        else:
+            critical.append((vm.name, status))
+        all.append((vm.name, status))
+
+    if critical:
+        print("Critical: the following VMs are not connected: {}".format(critical))
+        sys.exit(3)
+    else:
+        print("Okay: all VMs are connected")
+        sys.exit(0)
+
+
+#----------- UTILITY FUNCTION ---------------------------------------------#
+def test_ping(ip):
+    pingstatus = "Up"
+    try:
+        subprocess.check_output(
+            "ping -c 1 -W 4 {}".format(ip),
+            shell=True,
+            stderr=subprocess.STDOUT
+        )
+    except subprocess.CalledProcessError:
+        pingstatus = "Down"
+    return pingstatus
+
+
 CHECKS = {
     "host_status": check_host_overall_status,
     "host_cpu": check_host_cpu_usage,
     "host_memory": check_host_memory_usage,
     "host_datastore_status": check_host_datastore_status,
     "host_datastore_usage": check_host_datastore_usage,
-    "system_datastore_status": check_system_datastore_status
+    "system_datastore_status": check_system_datastore_status,
+    "system_datastore_usage": check_system_datastore_usage,
+    "system_ping_vms": check_system_ping_vms,
+    "system_connection_vms": check_system_connection_vms,
 }
