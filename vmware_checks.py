@@ -54,6 +54,25 @@ def check_host_cpu_usage(host, warn=0.75, crit=0.9, **kwargs):
         sys.exit(3)
 
 
+def check_host_datastore_accessibility(host, **kwargs):
+    """ Check that the datastores are accessible to the host. This check has only two states"""
+    okay, critical, all = [], [], []
+    datastores = host.datastore
+    for datastore in datastores:
+        accessible = datastore.summary.accessible
+        if accessible:
+            okay.append((datastore.name, "accessible"))
+        else:
+            critical.cappend((datastore.name, "inaccessible"))
+        all.append((datastore.name, "accessible" if accessible else "inaccessible"))
+    if critical:
+        print("Critical: The following datastores are inaccessible: {}".format(critical))
+        sys.exit(2)
+    else:
+        print("Okay: All datastores connected to this host are accessible")
+        sys.exit(0)
+
+
 def check_host_datastore_status(host, **kwargs):
     """ Check the status of all the datastores on the host. """
     okay, warning, critical, unknown, all = [], [], [], [], []
@@ -247,7 +266,7 @@ def check_system_ping_vms(system, **kwargs):
 
     if critical:
         print("Critical: the following VMs are inaccessible: {}".format(critical))
-        sys.exit(3)
+        sys.exit(2)
     else:
         print("Okay: all running VMs that have IPs are accessible")
         sys.exit(0)
@@ -270,14 +289,35 @@ def check_system_connection_vms(system, **kwargs):
 
     if critical:
         print("Critical: the following VMs are not connected: {}".format(critical))
-        sys.exit(3)
+        sys.exit(2)
     else:
         print("Okay: all VMs are connected")
         sys.exit(0)
 
 
+def check_system_network_accessibility(system, **kwargs):
+    """ Check that the network(s) is(are) accessible """
+    okay, critical, all = [], [], []
+
+    networks = system.get_obj_list(vim.Network)
+    for network in networks:
+        accessible = network.summary.accessible
+        if accessible:
+            okay.append((network.name, "accessible"))
+        else:
+            critical.cappend((network.name, "inaccessible"))
+        all.append((network.name, "accessible" if accessible else "inaccessible"))
+    if critical:
+        print("Critical: The following networks are inaccessible: {}".format(critical))
+        sys.exit(2)
+    else:
+        print("Okay: All networks defined on this vcenter are accessible")
+        sys.exit(0)
+
+
 #----------- UTILITY FUNCTION ---------------------------------------------#
 def test_ping(ip):
+    # TODO: faster implementation of this?
     pingstatus = "Up"
     try:
         subprocess.check_output(
@@ -294,10 +334,12 @@ CHECKS = {
     "host_status": check_host_overall_status,
     "host_cpu": check_host_cpu_usage,
     "host_memory": check_host_memory_usage,
+    "host_datastore_accessibility": check_host_datastore_accessibility,
     "host_datastore_status": check_host_datastore_status,
     "host_datastore_usage": check_host_datastore_usage,
     "system_datastore_status": check_system_datastore_status,
     "system_datastore_usage": check_system_datastore_usage,
     "system_ping_vms": check_system_ping_vms,
     "system_connection_vms": check_system_connection_vms,
+    "system_network_accessibility": check_system_network_accessibility,
 }
