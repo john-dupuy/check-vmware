@@ -63,7 +63,7 @@ def check_host_datastore_accessibility(host, **kwargs):
         if accessible:
             okay.append((datastore.name, "accessible"))
         else:
-            critical.cappend((datastore.name, "inaccessible"))
+            critical.append((datastore.name, "inaccessible"))
         all.append((datastore.name, "accessible" if accessible else "inaccessible"))
     if critical:
         print("Critical: The following datastores are inaccessible: {}".format(critical))
@@ -305,7 +305,7 @@ def check_system_network_accessibility(system, **kwargs):
         if accessible:
             okay.append((network.name, "accessible"))
         else:
-            critical.cappend((network.name, "inaccessible"))
+            critical.append((network.name, "inaccessible"))
         all.append((network.name, "accessible" if accessible else "inaccessible"))
     if critical:
         print("Critical: The following networks are inaccessible: {}".format(critical))
