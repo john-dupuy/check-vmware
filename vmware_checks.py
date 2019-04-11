@@ -324,7 +324,13 @@ def check_system_recent_tasks(system, warn=7, crit=15, **kwargs):
 
     for task in tasks:
         if task.info.error:
-            error.append((task.info.entityName, task.info.descriptionId, task.info.completeTime))
+            error.append((
+                task.info.descriptionId,
+                task.info.state,
+                task.info.entityName,
+                task.info.error.faultMessage[0].message,
+                task.info.completeTime.isoformat()
+            ))
 
     if len(error) > crit:
         print("Critical: More than {} tasks have errors: \n {}".format(crit, error))
