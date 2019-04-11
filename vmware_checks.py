@@ -315,6 +315,28 @@ def check_system_network_accessibility(system, **kwargs):
         sys.exit(0)
 
 
+def check_system_recent_tasks(system, warn=7, crit=15, **kwargs):
+    warn, crit = int(warn), int(crit)
+    # initialize empty list of tasks that have thrown an error
+    error = []
+    # get recent system tasks (recentTask gets all tasks from 10 min - Present)
+    tasks = system.service_instance.content.taskManager.recentTask
+
+    for task in tasks:
+        if task.info.error:
+            error.append((task.info.entityName, task.info.descriptionId, task.info.completeTime))
+
+    if len(error) > crit:
+        print("Critical: More than {} tasks have errors: \n {}".format(crit, error))
+        sys.exit(2)
+    elif len(error) > warn:
+        print("Warning: More than {} tasks have errors: \n {}".format(warn, error))
+        sys.exit(1)
+    else:
+        print("Okay: Less than {} tasks in past 10 minutes completed without error".format(warn))
+        sys.exit(0)
+
+
 #----------- UTILITY FUNCTION ---------------------------------------------#
 def test_ping(ip):
     # TODO: faster implementation of this?
@@ -342,4 +364,5 @@ CHECKS = {
     "system_ping_vms": check_system_ping_vms,
     "system_connection_vms": check_system_connection_vms,
     "system_network_accessibility": check_system_network_accessibility,
+    "system_tasks": check_system_recent_tasks,
 }
