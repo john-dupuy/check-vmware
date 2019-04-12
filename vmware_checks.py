@@ -324,11 +324,19 @@ def check_system_recent_tasks(system, warn=7, crit=15, **kwargs):
 
     for task in tasks:
         if task.info.error:
+            try:
+                # not all tasks have a faultMessage
+                error_info = getattr(
+                    getattr(task.info.error, "faultMessage", [None])[0], "message", ""
+                )
+            except Exception:
+                error_info = getattr(task.info.msg, "")
+
             error.append((
                 getattr(task.info, "descriptionId", ""),
                 getattr(task.info, "state", ""),
                 getattr(task.info, "entityName", ""),
-                getattr(getattr(task.info.error, "faultMessage", [None])[0], "message", ""),
+                error_info,
                 task.info.completeTime.isoformat()
             ))
 
