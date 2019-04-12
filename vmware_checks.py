@@ -330,7 +330,7 @@ def check_system_recent_tasks(system, warn=7, crit=15, **kwargs):
                     getattr(task.info.error, "faultMessage", [None])[0], "message", ""
                 )
             except Exception:
-                error_info = getattr(task.info.msg, "")
+                error_info = getattr(task.info, "msg", "")
 
             error.append((
                 getattr(task.info, "descriptionId", ""),
