@@ -4,20 +4,14 @@
 This script performs checks for vmware hosts through the
 vcenter API
 """
-
 import argparse
-import logging
 import sys
 
 from argparse import RawTextHelpFormatter
-from logging.config import fileConfig
-from vmware_checks import CHECKS
-from wrapanapi.systems.virtualcenter import VMWareSystem
 from pyVmomi import vim
-
-# setup logger
-fileConfig("vmware_logconf/logging_config.ini")
-logger = logging.getLogger()
+from vmware_checks import CHECKS
+from vmware_logconf import logger
+from wrapanapi.systems.virtualcenter import VMWareSystem
 
 
 def get_measurement(measurement):
@@ -101,11 +95,17 @@ def main():
     try:
         logger.info("Calling check %s", measure_func.__name__)
         measure_func(host or system, warn=args.warning, crit=args.critical)
-    except Exception:
-        logging.error(
+    except Exception as e:
+        logger.error(
             "Exception occurred during execution of %s",
             measure_func.__name__,
             exc_info=True
+        )
+        print(
+            "ERROR: exception '{}' occurred during execution of '{}', check logs for trace".format(
+                e,
+                measure_func.__name__
+            )
         )
         sys.exit(3)
 
