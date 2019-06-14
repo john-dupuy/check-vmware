@@ -3,5 +3,5 @@ import logging
 from logging.config import fileConfig
 
 # setup logger
-fileConfig("vmware_logconf/logging_config.ini")
+fileConfig("/var/lib/shinken/libexec/vmware_logconf/logging_config.ini")
 logger = logging.getLogger()
