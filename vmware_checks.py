@@ -9,6 +9,7 @@ Checks against vcenter begin with "check_system"
 import subprocess
 import sys
 
+from vmware_logconf import logger
 from pyVmomi import vim
 
 #----------------------------- HOST LEVEL CHECKS -----------------------------------------------#
@@ -17,16 +18,24 @@ def check_host_overall_status(host, **kwargs):
     status = host.overallStatus
     # determine ok, warning, critical, unknown state
     if status == "green":
-        print("Ok: overall status of host {} is {}".format(host.name, status))
+        msg = "Ok: overall status of host {} is {}".format(host.name, status)
+        logger.info(msg)
+        print(msg)
         sys.exit(0)
     elif status == "yellow":
-        print("Warning: esxi host {} may have a problem.".format(host.name))
+        msg = "Warning: esxi host {} may have a problem.".format(host.name)
+        logger.warning(msg)
+        print(msg)
         sys.exit(1)
     elif status == "red":
-        print("Critical: esxi host {} definitely has a problem".format(host.name))
+        msg = "Critical: esxi host {} definitely has a problem".format(host.name)
+        logger.error(msg)
+        print(msg)
         sys.exit(2)
     else:
-        print("Unknown: status of esxi host {} is unknown".format(host.name))
+        msg = "Unknown: status of esxi host {} is unknown".format(host.name)
+        logger.info(msg)
+        print(msg)
         sys.exit(3)
 
 
@@ -41,16 +50,24 @@ def check_host_cpu_usage(host, warn=0.75, crit=0.9, **kwargs):
     cpu_pct = cpu_frac * 100
 
     if cpu_frac < warn:
-        print("Ok: cpu usage is {}%.".format(cpu_pct))
+        msg = "Ok: cpu usage is {}%.".format(cpu_pct)
+        print(msg)
+        logger.info(msg)
         sys.exit(0)
     elif cpu_frac < crit:
-        print("Warning: cpu usage is {}% ".format(cpu_pct))
+        msg = "Warning: cpu usage is {}% ".format(cpu_pct)
+        print(msg)
+        logger.warning(msg)
         sys.exit(1)
     elif cpu_frac > crit:
-        print("Critical: cpu usage is {}%".format(cpu_pct))
+        msg = ("Critical: cpu usage is {}%".format(cpu_pct))
+        print(msg)
+        logger.error(msg)
         sys.exit(2)
     else:
-        print("Unknown: cpu usage is unknown on host {}".format(host.name))
+        msg = ("Unknown: cpu usage is unknown on host {}".format(host.name))
+        print(msg)
+        logger.info(msg)
         sys.exit(3)
 
 
@@ -66,10 +83,14 @@ def check_host_datastore_accessibility(host, **kwargs):
             critical.append((datastore.name, "inaccessible"))
         all.append((datastore.name, "accessible" if accessible else "inaccessible"))
     if critical:
-        print("Critical: The following datastores are inaccessible: {}".format(critical))
+        msg = ("Critical: The following datastores are inaccessible: {}".format(critical))
+        print(msg)
+        logger.error(msg)
         sys.exit(2)
     else:
-        print("Okay: All datastores connected to this host are accessible")
+        msg = ("Okay: All datastores connected to this host are accessible")
+        print(msg)
+        logger.info(msg)
         sys.exit(0)
 
 
@@ -90,19 +111,27 @@ def check_host_datastore_status(host, **kwargs):
         all.append((datastore.name, status))
 
     if critical:
-        print("Critical: the following datastore(s) definitely have an issue: {}\n "
-              "Status of all datastores is: {}".format(critical, all))
+        msg = ("Critical: the following datastore(s) definitely have an issue: {}\n "
+               "Status of all datastores is: {}".format(critical, all))
+        print(msg)
+        logger.error(msg)
         sys.exit(2)
     elif warning:
-        print("Warning: the following datastore(s) may have an issue: {}\n "
-              "Status of all datastores is: {}".format(warning, all))
+        msg = ("Warning: the following datastore(s) may have an issue: {}\n "
+               "Status of all datastores is: {}".format(warning, all))
+        print(msg)
+        logger.warning(msg)
         sys.exit(1)
     elif unknown:
-        print("Unknown: the following datastore(s) are in an unknown state: {}\n"
-              "Status of all datastores is: {}".format(unknown, all))
+        msg = ("Unknown: the following datastore(s) are in an unknown state: {}\n"
+               "Status of all datastores is: {}".format(unknown, all))
+        print(msg)
+        logger.info(msg)
         sys.exit(3)
     else:
-        print("Ok: all datastore(s) are in the green state: {}".format(okay))
+        msg = ("Ok: all datastore(s) are in the green state: {}".format(okay))
+        print(msg)
+        logger.info(msg)
         sys.exit(0)
 
 
@@ -130,19 +159,27 @@ def check_host_datastore_usage(host, warn=0.75, crit=0.9, **kwargs):
         all.append((datastore.name, pct))
 
     if critical:
-        print("Critical: the following datastore(s) are in critical usage: {}\n "
-              "Usage of all datastores is: {}".format(critical, all))
+        msg = ("Critical: the following datastore(s) are in critical usage: {}\n "
+               "Usage of all datastores is: {}".format(critical, all))
+        print(msg)
+        logger.error(msg)
         sys.exit(2)
     elif warning:
-        print("Warning: the following datastore(s) have high usage: {}\n "
-              "Usage of all datastores is: {}".format(warning, all))
+        msg = ("Warning: the following datastore(s) have high usage: {}\n "
+               "Usage of all datastores is: {}".format(warning, all))
+        print(msg)
+        logger.warning(msg)
         sys.exit(1)
     elif unknown:
-        print("Unknown: the following datastore(s) have unknown usage: {}\n"
-              "Usage of all datastores is: {}".format(unknown, all))
+        msg = ("Unknown: the following datastore(s) have unknown usage: {}\n"
+               "Usage of all datastores is: {}".format(unknown, all))
+        print(msg)
+        logger.info(msg)
         sys.exit(3)
     else:
-        print("Ok: all datastore(s) have ample space: {}".format(okay))
+        msg = ("Ok: all datastore(s) have ample space: {}".format(okay))
+        print(msg)
+        logger.info(msg)
         sys.exit(0)
 
 
@@ -158,16 +195,24 @@ def check_host_memory_usage(host, warn=0.75, crit=0.9, **kwargs):
     mem_pct = mem_frac * 100
 
     if mem_frac < warn:
-        print("Ok: memory usage is {}%.".format(mem_pct))
+        msg = ("Ok: memory usage is {}%.".format(mem_pct))
+        print(msg)
+        logger.info(msg)
         sys.exit(0)
     elif mem_frac < crit:
-        print("Warning: memory usage is {}% ".format(mem_pct))
+        msg = ("Warning: memory usage is {}% ".format(mem_pct))
+        print(msg)
+        logger.warning(msg)
         sys.exit(1)
     elif mem_frac > crit:
-        print("Critical: memory usage is {}%".format(mem_pct))
+        msg = ("Critical: memory usage is {}%".format(mem_pct))
+        print(msg)
+        logger.error(msg)
         sys.exit(2)
     else:
-        print("Unknown: memory usage is unknown on host {}".format(host.name))
+        msg = ("Unknown: memory usage is unknown on host {}".format(host.name))
+        print(msg)
+        logger.info(msg)
         sys.exit(3)
 
 
@@ -191,19 +236,27 @@ def check_system_datastore_status(system, **kwargs):
         all.append((datastore.name, status))
 
     if critical:
-        print("Critical: the following datastore(s) definitely have an issue: {}\n "
-              "Status of all datastores is: {}".format(critical, all))
+        msg = ("Critical: the following datastore(s) definitely have an issue: {}\n "
+               "Status of all datastores is: {}".format(critical, all))
+        print(msg)
+        logger.error(msg)
         sys.exit(2)
     elif warning:
-        print("Warning: the following datastore(s) may have an issue: {}\n "
-              "Status of all datastores is: {}".format(warning, all))
+        msg = ("Warning: the following datastore(s) may have an issue: {}\n "
+               "Status of all datastores is: {}".format(warning, all))
+        print(msg)
+        logger.warning(msg)
         sys.exit(1)
     elif unknown:
-        print("Unknown: the following datastore(s) are in an unknown state: {}\n"
-              "Status of all datastores is: {}".format(unknown, all))
+        msg = ("Unknown: the following datastore(s) are in an unknown state: {}\n"
+               "Status of all datastores is: {}".format(unknown, all))
+        print(msg)
+        logger.info(msg)
         sys.exit(3)
     else:
-        print("Ok: all datastore(s) are in the green state: {}".format(okay))
+        msg = ("Ok: all datastore(s) are in the green state: {}".format(okay))
+        print(msg)
+        logger.info(msg)
         sys.exit(0)
 
 
@@ -234,19 +287,27 @@ def check_system_datastore_usage(system, warn=0.75, crit=0.9, **kwargs):
         all.append((datastore.name, pct))
 
     if critical:
-        print("Critical: the following datastore(s) are in critical usage: {}\n "
-              "Usage of all datastores is: {}".format(critical, all))
+        msg = ("Critical: the following datastore(s) are in critical usage: {}\n "
+               "Usage of all datastores is: {}".format(critical, all))
+        print(msg)
+        logger.error(msg)
         sys.exit(2)
     elif warning:
-        print("Warning: the following datastore(s) have high usage: {}\n "
-              "Usage of all datastores is: {}".format(warning, all))
+        msg = ("Warning: the following datastore(s) have high usage: {}\n "
+               "Usage of all datastores is: {}".format(warning, all))
+        print(msg)
+        logger.warning(msg)
         sys.exit(1)
     elif unknown:
-        print("Unknown: the following datastore(s) have unknown usage: {}\n"
-              "Usage of all datastores is: {}".format(unknown, all))
+        msg = ("Unknown: the following datastore(s) have unknown usage: {}\n"
+               "Usage of all datastores is: {}".format(unknown, all))
+        print(msg)
+        logger.info(msg)
         sys.exit(3)
     else:
-        print("Ok: all datastore(s) have ample space: {}".format(okay))
+        msg = "Ok: all datastore(s) have ample space: {}".format(okay)
+        print(msg)
+        logger.info(msg)
         sys.exit(0)
 
 
@@ -265,10 +326,14 @@ def check_system_ping_vms(system, **kwargs):
             all.append((vm.name, vm.ip, status))
 
     if critical:
-        print("Critical: the following VMs are inaccessible: {}".format(critical))
+        msg = ("Critical: the following VMs are inaccessible: {}".format(critical))
+        print(msg)
+        logger.error(msg)
         sys.exit(2)
     else:
-        print("Okay: all running VMs that have IPs are accessible")
+        msg = "Okay: all running VMs that have IPs are accessible"
+        print(msg)
+        logger.info(msg)
         sys.exit(0)
 
 
@@ -288,10 +353,14 @@ def check_system_connection_vms(system, **kwargs):
         all.append((vm.name, status))
 
     if critical:
-        print("Critical: the following VMs are not connected: {}".format(critical))
+        msg = ("Critical: the following VMs are not connected: {}".format(critical))
+        print(msg)
+        logger.error(msg)
         sys.exit(2)
     else:
-        print("Okay: all VMs are connected")
+        msg = "Okay: all VMs are connected"
+        print(msg)
+        logger.info(msg)
         sys.exit(0)
 
 
@@ -308,10 +377,14 @@ def check_system_network_accessibility(system, **kwargs):
             critical.append((network.name, "inaccessible"))
         all.append((network.name, "accessible" if accessible else "inaccessible"))
     if critical:
-        print("Critical: The following networks are inaccessible: {}".format(critical))
+        msg = ("Critical: The following networks are inaccessible: {}".format(critical))
+        print(msg)
+        logger.error(msg)
         sys.exit(2)
     else:
-        print("Okay: All networks defined on this vcenter are accessible")
+        msg = "Okay: All networks defined on this vcenter are accessible"
+        print(msg)
+        logger.info(msg)
         sys.exit(0)
 
 
@@ -341,13 +414,19 @@ def check_system_recent_tasks(system, warn=7, crit=15, **kwargs):
             ))
 
     if len(error) > crit:
-        print("Critical: More than {} tasks have errors: \n {}".format(crit, error))
+        msg = ("Critical: More than {} tasks have errors: \n {}".format(crit, error))
+        print(msg)
+        logger.error(msg)
         sys.exit(2)
     elif len(error) > warn:
-        print("Warning: More than {} tasks have errors: \n {}".format(warn, error))
+        msg = ("Warning: More than {} tasks have errors: \n {}".format(warn, error))
+        print(msg)
+        logger.warning(msg)
         sys.exit(1)
     else:
-        print("Okay: Less than {} tasks in past 10 minutes completed without error".format(warn))
+        msg = "Okay: Less than {} tasks in past 10 minutes completed without error".format(warn)
+        print(msg)
+        logger.info(msg)
         sys.exit(0)
 
 

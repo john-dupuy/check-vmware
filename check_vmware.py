@@ -4,14 +4,14 @@
 This script performs checks for vmware hosts through the
 vcenter API
 """
-
 import argparse
 import sys
 
 from argparse import RawTextHelpFormatter
-from vmware_checks import CHECKS
-from wrapanapi.systems.virtualcenter import VMWareSystem
 from pyVmomi import vim
+from vmware_checks import CHECKS
+from vmware_logconf import logger
+from wrapanapi.systems.virtualcenter import VMWareSystem
 
 
 def get_measurement(measurement):
@@ -71,27 +71,43 @@ def main():
     )
     args = parser.parse_args()
     if float(args.warning) > float(args.critical):
-        print("Error: warning value can not be greater than critical value")
+        logger.error("Error: warning value can not be greater than critical value")
         sys.exit(3)
 
     # connect to the system
+    logger.info("Connecting to Vsphere %s as user %s", args.vsphere, args.user)
     system = VMWareSystem(args.vsphere, args.user, args.password)
     # get the host object
     host = None
     if args.hostname:
         host = system.get_obj(vim.HostSystem, args.hostname)
         if not host:
-            print("Error: esxi hostname {} does not exist on vSphere {}".format(
+            logger.error("Error: esxi hostname {} does not exist on vSphere {}".format(
                 args.hostname, args.vsphere
             ))
             sys.exit(3)
     # get measurement function
     measure_func = get_measurement(args.measurement)
     if not measure_func:
-        print("Error: measurement {} not understood".format(args.measurement))
+        logger.error("Error: measurement {} not understood".format(args.measurement))
         sys.exit(3)
     # run the measurement function
-    measure_func(host or system, warn=args.warning, crit=args.critical)
+    try:
+        logger.info("Calling check %s", measure_func.__name__)
+        measure_func(host or system, warn=args.warning, crit=args.critical)
+    except Exception as e:
+        logger.error(
+            "Exception occurred during execution of %s",
+            measure_func.__name__,
+            exc_info=True
+        )
+        print(
+            "ERROR: exception '{}' occurred during execution of '{}', check logs for trace".format(
+                e,
+                measure_func.__name__
+            )
+        )
+        sys.exit(3)
 
 
 if __name__ == "__main__":
