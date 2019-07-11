@@ -10,7 +10,7 @@ import sys
 from argparse import RawTextHelpFormatter
 from pyVmomi import vim
 from vmware_checks import CHECKS
-from vmware_logconf import logger
+from vmware_logconf import get_logger
 from wrapanapi.systems.virtualcenter import VMWareSystem
 
 
@@ -69,7 +69,18 @@ def main():
         help="Critical value for the check as a fraction. (e.g. 0.9)",
         default=0.9
     )
+    parser.add_argument(
+        "-l",
+        "--local",
+        dest="local",
+        help="Use this field when testing locally",
+        action="store_true",
+        default=False
+    )
     args = parser.parse_args()
+    # set logger
+    logger = get_logger(args.local)
+
     if float(args.warning) > float(args.critical):
         logger.error("Error: warning value can not be greater than critical value")
         sys.exit(3)
@@ -94,7 +105,7 @@ def main():
     # run the measurement function
     try:
         logger.info("Calling check %s", measure_func.__name__)
-        measure_func(host or system, warn=args.warning, crit=args.critical)
+        measure_func(host or system, warn=args.warning, crit=args.critical, logger=logger)
     except Exception as e:
         logger.error(
             "Exception occurred during execution of %s",

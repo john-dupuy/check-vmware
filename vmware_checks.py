@@ -9,12 +9,12 @@ Checks against vcenter begin with "check_system"
 import subprocess
 import sys
 
-from vmware_logconf import logger
 from pyVmomi import vim
 
 #----------------------------- HOST LEVEL CHECKS -----------------------------------------------#
 def check_host_overall_status(host, **kwargs):
     """ Check overall host status. """
+    logger = kwargs["logger"]
     status = host.overallStatus
     # determine ok, warning, critical, unknown state
     if status == "green":
@@ -40,6 +40,7 @@ def check_host_overall_status(host, **kwargs):
 
 
 def check_host_cpu_usage(host, warn=0.75, crit=0.9, **kwargs):
+    logger = kwargs["logger"]
     warn = float(warn)
     crit = float(crit)
 
@@ -73,7 +74,8 @@ def check_host_cpu_usage(host, warn=0.75, crit=0.9, **kwargs):
 
 def check_host_datastore_accessibility(host, **kwargs):
     """ Check that the datastores are accessible to the host. This check has only two states"""
-    okay, critical, all = [], [], []
+    logger = kwargs["logger"]
+    okay, critical, all_items = [], [], []
     datastores = host.datastore
     for datastore in datastores:
         accessible = datastore.summary.accessible
@@ -81,7 +83,7 @@ def check_host_datastore_accessibility(host, **kwargs):
             okay.append((datastore.name, "accessible"))
         else:
             critical.append((datastore.name, "inaccessible"))
-        all.append((datastore.name, "accessible" if accessible else "inaccessible"))
+        all_items.append((datastore.name, "accessible" if accessible else "inaccessible"))
     if critical:
         msg = ("Critical: The following datastores are inaccessible: {}".format(critical))
         print(msg)
@@ -96,7 +98,8 @@ def check_host_datastore_accessibility(host, **kwargs):
 
 def check_host_datastore_status(host, **kwargs):
     """ Check the status of all the datastores on the host. """
-    okay, warning, critical, unknown, all = [], [], [], [], []
+    logger = kwargs["logger"]
+    okay, warning, critical, unknown, all_items = [], [], [], [], []
     datastores = host.datastore
     for datastore in datastores:
         status = datastore.overallStatus
@@ -108,23 +111,23 @@ def check_host_datastore_status(host, **kwargs):
             critical.append((datastore.name, status))
         else:
             unknown.append((datastore.name, status))
-        all.append((datastore.name, status))
+        all_items.append((datastore.name, status))
 
     if critical:
         msg = ("Critical: the following datastore(s) definitely have an issue: {}\n "
-               "Status of all datastores is: {}".format(critical, all))
+               "Status of all datastores is: {}".format(critical, all_items))
         print(msg)
         logger.error(msg)
         sys.exit(2)
     elif warning:
         msg = ("Warning: the following datastore(s) may have an issue: {}\n "
-               "Status of all datastores is: {}".format(warning, all))
+               "Status of all datastores is: {}".format(warning, all_items))
         print(msg)
         logger.warning(msg)
         sys.exit(1)
     elif unknown:
         msg = ("Unknown: the following datastore(s) are in an unknown state: {}\n"
-               "Status of all datastores is: {}".format(unknown, all))
+               "Status of all datastores is: {}".format(unknown, all_items))
         print(msg)
         logger.info(msg)
         sys.exit(3)
@@ -137,9 +140,10 @@ def check_host_datastore_status(host, **kwargs):
 
 def check_host_datastore_usage(host, warn=0.75, crit=0.9, **kwargs):
     """ Check the usage of all the datastores on the host. """
+    logger = kwargs["logger"]
     warn = float(warn)
     crit = float(crit)
-    okay, warning, critical, unknown, all = [], [], [], [], []
+    okay, warning, critical, unknown, all_items = [], [], [], [], []
 
     datastores = host.datastore
     for datastore in datastores:
@@ -156,23 +160,23 @@ def check_host_datastore_usage(host, warn=0.75, crit=0.9, **kwargs):
             critical.append((datastore.name, pct))
         else:
             unknown.append((datastore.name, pct))
-        all.append((datastore.name, pct))
+        all_items.append((datastore.name, pct))
 
     if critical:
         msg = ("Critical: the following datastore(s) are in critical usage: {}\n "
-               "Usage of all datastores is: {}".format(critical, all))
+               "Usage of all datastores is: {}".format(critical, all_items))
         print(msg)
         logger.error(msg)
         sys.exit(2)
     elif warning:
         msg = ("Warning: the following datastore(s) have high usage: {}\n "
-               "Usage of all datastores is: {}".format(warning, all))
+               "Usage of all datastores is: {}".format(warning, all_items))
         print(msg)
         logger.warning(msg)
         sys.exit(1)
     elif unknown:
         msg = ("Unknown: the following datastore(s) have unknown usage: {}\n"
-               "Usage of all datastores is: {}".format(unknown, all))
+               "Usage of all datastores is: {}".format(unknown, all_items))
         print(msg)
         logger.info(msg)
         sys.exit(3)
@@ -185,6 +189,7 @@ def check_host_datastore_usage(host, warn=0.75, crit=0.9, **kwargs):
 
 def check_host_memory_usage(host, warn=0.75, crit=0.9, **kwargs):
     """ Check memory usage of the host. """
+    logger = kwargs["logger"]
     warn = float(warn)
     crit = float(crit)
 
@@ -219,7 +224,8 @@ def check_host_memory_usage(host, warn=0.75, crit=0.9, **kwargs):
 #--------------- SYSTEM LEVEL CHECKS -------------------------------------------------------#
 def check_system_datastore_status(system, **kwargs):
     """ Check the status of all the datastores on vcenter. """
-    okay, warning, critical, unknown, all = [], [], [], [], []
+    logger = kwargs["logger"]
+    okay, warning, critical, unknown, all_items = [], [], [], [], []
     datastores = [
         system.get_obj(vim.Datastore, datastore) for datastore in system.list_datastore()
     ]
@@ -233,23 +239,23 @@ def check_system_datastore_status(system, **kwargs):
             critical.append((datastore.name, status))
         else:
             unknown.append((datastore.name, status))
-        all.append((datastore.name, status))
+        all_items.append((datastore.name, status))
 
     if critical:
         msg = ("Critical: the following datastore(s) definitely have an issue: {}\n "
-               "Status of all datastores is: {}".format(critical, all))
+               "Status of all datastores is: {}".format(critical, all_items))
         print(msg)
         logger.error(msg)
         sys.exit(2)
     elif warning:
         msg = ("Warning: the following datastore(s) may have an issue: {}\n "
-               "Status of all datastores is: {}".format(warning, all))
+               "Status of all datastores is: {}".format(warning, all_items))
         print(msg)
         logger.warning(msg)
         sys.exit(1)
     elif unknown:
         msg = ("Unknown: the following datastore(s) are in an unknown state: {}\n"
-               "Status of all datastores is: {}".format(unknown, all))
+               "Status of all datastores is: {}".format(unknown, all_items))
         print(msg)
         logger.info(msg)
         sys.exit(3)
@@ -262,10 +268,11 @@ def check_system_datastore_status(system, **kwargs):
 
 def check_system_datastore_usage(system, warn=0.75, crit=0.9, **kwargs):
     """ Check the usage of all the datastores on vcenter. """
+    logger = kwargs["logger"]
     warn = float(warn)
     crit = float(crit)
 
-    okay, warning, critical, unknown, all = [], [], [], [], []
+    okay, warning, critical, unknown, all_items = [], [], [], [], []
     datastores = [
         system.get_obj(vim.Datastore, datastore) for datastore in system.list_datastore()
     ]
@@ -284,23 +291,23 @@ def check_system_datastore_usage(system, warn=0.75, crit=0.9, **kwargs):
             critical.append((datastore.name, pct))
         else:
             unknown.append((datastore.name, pct))
-        all.append((datastore.name, pct))
+        all_items.append((datastore.name, pct))
 
     if critical:
         msg = ("Critical: the following datastore(s) are in critical usage: {}\n "
-               "Usage of all datastores is: {}".format(critical, all))
+               "Usage of all datastores is: {}".format(critical, all_items))
         print(msg)
         logger.error(msg)
         sys.exit(2)
     elif warning:
         msg = ("Warning: the following datastore(s) have high usage: {}\n "
-               "Usage of all datastores is: {}".format(warning, all))
+               "Usage of all datastores is: {}".format(warning, all_items))
         print(msg)
         logger.warning(msg)
         sys.exit(1)
     elif unknown:
         msg = ("Unknown: the following datastore(s) have unknown usage: {}\n"
-               "Usage of all datastores is: {}".format(unknown, all))
+               "Usage of all datastores is: {}".format(unknown, all_items))
         print(msg)
         logger.info(msg)
         sys.exit(3)
@@ -313,9 +320,10 @@ def check_system_datastore_usage(system, warn=0.75, crit=0.9, **kwargs):
 
 def check_system_ping_vms(system, **kwargs):
     """ This checks the ping of all running VMs, no warning state for this check"""
+    logger = kwargs["logger"]
     vms = system.list_vms()
 
-    okay, critical, all = [], [], []
+    okay, critical, all_items = [], [], []
     for vm in vms:
         if vm.state == "VmState.RUNNING" and vm.ip:
             status = test_ping(vm.ip)
@@ -323,7 +331,7 @@ def check_system_ping_vms(system, **kwargs):
                 okay.append((vm.name, vm.ip, status))
             else:
                 critical.append((vm.name, vm.ip, status))
-            all.append((vm.name, vm.ip, status))
+            all_items.append((vm.name, vm.ip, status))
 
     if critical:
         msg = ("Critical: the following VMs are inaccessible: {}".format(critical))
@@ -341,16 +349,17 @@ def check_system_connection_vms(system, **kwargs):
     """ This checks the connection of all running VMs, no warning state for this check. This
         check will report if VMs are disconnected, inaccessible, invalid or orphaned. All of
         which will return a critical status. """
+    logger = kwargs["logger"]
     vms = system.get_obj_list(vim.VirtualMachine)
 
-    okay, critical, all = [], [], []
+    okay, critical, all_items = [], [], []
     for vm in vms:
         status = vm.summary.runtime.connectionState
         if status == "connected":
             okay.append((vm.name, status))
         else:
             critical.append((vm.name, status))
-        all.append((vm.name, status))
+        all_items.append((vm.name, status))
 
     if critical:
         msg = ("Critical: the following VMs are not connected: {}".format(critical))
@@ -366,7 +375,8 @@ def check_system_connection_vms(system, **kwargs):
 
 def check_system_network_accessibility(system, **kwargs):
     """ Check that the network(s) is(are) accessible """
-    okay, critical, all = [], [], []
+    logger = kwargs["logger"]
+    okay, critical, all_items = [], [], []
 
     networks = system.get_obj_list(vim.Network)
     for network in networks:
@@ -375,7 +385,7 @@ def check_system_network_accessibility(system, **kwargs):
             okay.append((network.name, "accessible"))
         else:
             critical.append((network.name, "inaccessible"))
-        all.append((network.name, "accessible" if accessible else "inaccessible"))
+        all_items.append((network.name, "accessible" if accessible else "inaccessible"))
     if critical:
         msg = ("Critical: The following networks are inaccessible: {}".format(critical))
         print(msg)
@@ -389,6 +399,7 @@ def check_system_network_accessibility(system, **kwargs):
 
 
 def check_system_recent_tasks(system, warn=7, crit=15, **kwargs):
+    logger = kwargs["logger"]
     warn, crit = int(warn), int(crit)
     # initialize empty list of tasks that have thrown an error
     error = []

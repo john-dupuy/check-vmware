@@ -1,7 +1,13 @@
 import logging
+import os
 
 from logging.config import fileConfig
 
+
 # setup logger
-fileConfig("/var/lib/shinken/libexec/vmware_logconf/logging_config.ini")
-logger = logging.getLogger()
+def get_logger(local):
+    if local:
+        fileConfig(os.getcwd() + "/vmware_logconf/local_config.ini")
+    else:
+        fileConfig("/var/lib/shinken/libexec/vmware_logconf/logging_config.ini")
+    return logging.getLogger()
