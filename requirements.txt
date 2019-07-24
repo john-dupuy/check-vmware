@@ -1,3 +1,6 @@
 pyvcloud==19.1.2
 pyvmomi==6.7.1
+PyYAML==5.1.1
+pytest==5.0.1
 wrapanapi==3.0.43
+
