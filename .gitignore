@@ -1,3 +1,4 @@
+check-vmware/conf/.yaml_key
 check-vmware/conf/cfme-qe-yamls
 check-vmware/doc_data.yaml
 check-vmware/__pycache__

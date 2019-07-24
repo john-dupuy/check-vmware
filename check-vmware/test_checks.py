@@ -1,6 +1,9 @@
+import os
 import pytest
 import random
 import yaml
+import yaycl
+import yaycl_crypt
 
 from pyVmomi import vim
 from vmware_checks import CHECKS
@@ -10,6 +13,9 @@ from wrapanapi.systems.virtualcenter import VMWareSystem
 
 @pytest.fixture(scope="session")
 def provider_data():
+    if not os.path.exists("conf/cfme-qe-yamls"):
+        pytest.fail("Please clone yamls directory in conf/ to run this test.")
+
     try:
         with open("conf/cfme-qe-yamls/complete/cfme_data.yaml", "r") as stream:
             cfme_data = yaml.safe_load(stream)
@@ -25,10 +31,25 @@ def provider_data():
 
 @pytest.fixture(scope="session")
 def credentials(provider_data):
+    if not os.path.exists("conf/.yaml_key"):
+        pytest.fail("No yaml key in conf/.yaml_key")
+    conf = yaycl.Config(
+        "conf/cfme-qe-yamls/complete", crypt_key_file="conf/.yaml_key"
+    )
+    yaycl_crypt.decrypt_yaml(conf, "credentials", delete=False)
     try:
         with open("conf/cfme-qe-yamls/complete/credentials.yaml", "r") as stream:
-            creds = yaml.safe_load(stream)
+            try:
+                creds = yaml.safe_load(stream)
+            except UnicodeDecodeError:
+                os.remove("conf/cfme-qe-yamls/complete/credentials.yaml")
+                pytest.fail(
+                    "Unable to read decrypted credential file, "
+                    "did you put the correct key in conf/.yaml_key?"
+                )
             yield creds.get(provider_data.get("credentials"))
+            # cleanup the file after the test finishes
+            yaycl_crypt.encrypt_yaml(conf, "credentials", delete=True)
     except IOError:
         pytest.fail("Credential YAML file not found or not decrypted!")
 
