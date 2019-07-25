@@ -1,0 +1,7 @@
+check-vmware/conf/.yaml_key
+check-vmware/conf/cfme-qe-yamls
+check-vmware/doc_data.yaml
+check-vmware/__pycache__
+check-vmware/vmware_logconf/__pycache__
+*.log
+.check_venv

@@ -320,6 +320,7 @@ def check_system_datastore_usage(system, warn=0.75, crit=0.9, **kwargs):
 
 def check_system_ping_vms(system, **kwargs):
     """ This checks the ping of all running VMs, no warning state for this check"""
+    # TODO: speed this check up
     logger = kwargs["logger"]
     vms = system.list_vms()
 
