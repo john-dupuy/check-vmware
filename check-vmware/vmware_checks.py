@@ -149,8 +149,12 @@ def check_host_datastore_usage(host, warn=0.75, crit=0.9, **kwargs):
     for datastore in datastores:
         freespace = float(datastore.summary.freeSpace)
         totalspace = float(datastore.summary.capacity)
-
-        usage = round(1 - (freespace / totalspace), 3)
+        
+        try:
+            usage = round(1 - (freespace / totalspace), 3)
+        except ZeroDivisionError:
+            continue
+        
         pct = str(usage * 100) + "%"
         if usage < warn:
             okay.append((datastore.name, pct))
@@ -281,7 +285,11 @@ def check_system_datastore_usage(system, warn=0.75, crit=0.9, **kwargs):
         freespace = float(datastore.summary.freeSpace)
         totalspace = float(datastore.summary.capacity)
 
-        usage = round(1 - (freespace / totalspace), 3)
+        try:
+            usage = round(1 - (freespace / totalspace), 3)
+        except ZeroDivisionError:
+            continue
+
         pct = str(usage * 100) + "%"
         if usage < warn:
             okay.append((datastore.name, pct))
