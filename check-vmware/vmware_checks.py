@@ -442,6 +442,67 @@ def check_system_recent_tasks(system, warn=7, crit=15, **kwargs):
         sys.exit(0)
 
 
+#----------------------------- VM/Template(SYSTEM) LEVEL CHECKS -----------------------------#
+def check_vm_count(system, warn=20, crit=30, **kwargs):
+    """ Check count of VMs. """
+    logger = kwargs["logger"]
+    warn = int(warn)
+    crit = int(crit)
+    vm_count = len(system.list_vms())
+    # determine ok, warning, critical, unknown state
+    if vm_count < warn:
+        msg = ("Ok: VM count is less than {}. VM Count = {}".format(warn, vm_count))
+        logger.info(msg)
+        print(msg)
+        sys.exit(0)
+    elif warn <= vm_count <= crit:
+        msg = ("Warning: VM count is greater than {} & less than {}. VM Count = {}"
+            .format(warn, crit, vm_count))
+        logger.warning(msg)
+        print(msg)
+        sys.exit(1)
+    elif vm_count > crit:
+        msg = ("Critical: VM count is greater than {}. VM Count = {}".format(crit, vm_count))
+        logger.error(msg)
+        print(msg)
+        sys.exit(2)
+    else:
+        msg = ("Unknown: VM count is unknown")
+        logger.info(msg)
+        print(msg)
+        sys.exit(3)
+
+
+def check_template_count(system, warn=20, crit=30, **kwargs):
+    """ Check count of templates. """
+    logger = kwargs["logger"]
+    warn = int(warn)
+    crit = int(crit)
+    template_count = len(system.list_templates())
+    # determine ok, warning, critical, unknown state
+    if template_count < warn:
+        msg = ("Ok: Template count is less than {}. Template Count = {}".format(warn, template_count))
+        logger.info(msg)
+        print(msg)
+        sys.exit(0)
+    elif warn <= template_count <= crit:
+        msg = ("Warning: Template count is greater than {} & less than {}. Template Count = {}"
+            .format(warn, crit, template_count))
+        logger.warning(msg)
+        print(msg)
+        sys.exit(1)
+    elif template_count > crit:
+        msg = ("Critical: Template count is greater than {}. Template Count = {}".format(crit, template_count))
+        logger.error(msg)
+        print(msg)
+        sys.exit(2)
+    else:
+        msg = ("Unknown: Template count is unknown")
+        logger.info(msg)
+        print(msg)
+        sys.exit(3)
+
+
 #----------- UTILITY FUNCTION ---------------------------------------------#
 def test_ping(ip):
     # TODO: faster implementation of this?
@@ -470,4 +531,6 @@ CHECKS = {
     "system_connection_vms": check_system_connection_vms,
     "system_network_accessibility": check_system_network_accessibility,
     "system_tasks": check_system_recent_tasks,
+    "vm_count": check_vm_count,
+    "template_count": check_template_count,
 }
